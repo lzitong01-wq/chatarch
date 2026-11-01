@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="对话考古 ChatArch：粘贴一段你与 AI 的协作对话记录，自动划分阶段地层、标记方向变更与废稿，导出考古报告。产出会被保留，过程才最值钱。">
+  <!-- 社媒分享卡片 -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="对话考古 · ChatArch">
+  <meta property="og:description" content="AI 协作出品会被保留，生产过程全部丢弃——而过程才最值钱。粘贴对话记录，自动划分阶段地层、标记方向变更与废稿，导出考古报告。">
+  <meta property="og:image" content="https://a0217960a7f21e91f.app.workbuddy.host/docs/assets/shot-1-landing.png?sharecode=QZZXLEAWWY">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- favicon：朱砂「考」字印 -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23a3392a'/%3E%3Ctext x='32' y='45' font-family='serif' font-size='38' font-weight='bold' fill='%23f4efe4' text-anchor='middle'%3E考%3C/text%3E%3C/svg%3E">
+  <title>对话考古 · ChatArch</title>
+  <link rel="stylesheet" href="src/css/main.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-seal">考</span>
+      <div class="brand-text">
+        <h1>对话考古 <span class="brand-en">ChatArch</span></h1>
+        <p class="tagline">你的对话记录里，埋着比结论更值钱的东西</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="strata-strip" aria-hidden="true"></div>
+
+  <main class="container">
+    <!-- 引导区 -->
+    <section class="hero">
+      <p class="hero-lead">AI 协作出品会被保留，<b>生产过程全部丢弃</b>——而过程才最值钱。</p>
+      <div class="hero-steps">
+        <div class="hero-step">
+          <span class="hero-step-no">壹</span>
+          <div><b>发掘</b><p>粘贴对话记录，自动识别格式，切分轮次</p></div>
+        </div>
+        <div class="hero-step">
+          <span class="hero-step-no">贰</span>
+          <div><b>断代</b><p>划分阶段地层，标记方向变更、废稿与卡点</p></div>
+        </div>
+        <div class="hero-step">
+          <span class="hero-step-no">叁</span>
+          <div><b>陈列</b><p>四视图呈现协作全貌，导出考古报告</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 壹 · 导入 -->
+    <section class="panel" id="input-panel">
+      <h2 class="panel-title"><span class="panel-no">壹</span>粘贴对话记录</h2>
+      <div id="input-body">
+        <textarea id="input" spellcheck="false" placeholder="支持以下格式（自动识别）：
+
+用户：……
+助手：……
+
+Human: ……
+Assistant: ……
+
+### User
+……
+### Assistant
+……
+
+也支持 JSON 导出格式：[{"role":"user","content":"……"}]"></textarea>
+        <div class="actions">
+          <button id="btn-parse" class="btn btn-primary">开始发掘</button>
+          <button id="btn-sample" class="btn">载入示例</button>
+          <button id="btn-clear" class="btn">清空</button>
+        </div>
+        <p class="input-error" id="input-error" role="alert" hidden></p>
+        <p class="input-hint">没有对话记录？点「载入示例」——看一场 50 轮税务竞赛论文创作的全过程考古。同一段对话还有 <button type="button" class="link-btn" id="btn-sample-en">英文格式</button> 与 <button type="button" class="link-btn" id="btn-sample-md">Markdown 格式</button> 两个版本，可验证多格式自动识别。</p>
+      </div>
+      <div id="input-collapsed" class="input-collapsed" hidden>
+        <span class="input-collapsed-text" id="input-summary-text"></span>
+        <button id="btn-reexpand" class="btn btn-small">重新粘贴</button>
+      </div>
+    </section>
+
+    <!-- 工作区（解析后显示） -->
+    <div id="workspace" hidden>
+
+      <!-- 貳 · 考古结论 -->
+      <section class="panel verdict">
+        <h2 class="panel-title"><span class="panel-no">貳</span>考古结论</h2>
+        <p class="verdict-text" id="verdict-text"></p>
+        <div class="stats" id="verdict-chips"></div>
+      </section>
+
+      <!-- 视图切换 -->
+      <nav class="view-tabs" id="view-tabs">
+        <button class="view-tab active" data-view="timeline">编年史</button>
+        <button class="view-tab" data-view="museum">废稿博物馆</button>
+        <button class="view-tab" data-view="portrait">协作画像</button>
+        <button class="view-tab" data-view="hotspots">卡点热区</button>
+        <button class="view-tab" data-view="report">考古报告</button>
+      </nav>
+
+      <section class="view" id="view-timeline"></section>
+      <section class="view" id="view-museum" hidden></section>
+      <section class="view" id="view-portrait" hidden></section>
+      <section class="view" id="view-hotspots" hidden></section>
+      <section class="view" id="view-report" hidden></section>
+
+      <details class="method-note">
+        <summary>分析方法与边界</summary>
+        <div class="method-note-body">
+          <p>ChatArch 采用<b>启发式分析</b>：通过用词信号（如「作废」「换个思路」「对了」）、消息长度与结构推断协作事件，不声称理解语义。每个结论都附带触发文本，可点击卡片展开原文核对。</p>
+          <p>阶段划分以强事件为锚——第一次否决/方向变更之前为探索期，其到最后一次否决/方向变更为攻坚期，此后若存在定稿信号才判定收尾期；没有强信号时诚实呈现单一阶段，不虚构叙事。</p>
+        </div>
+      </details>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <span>ChatArch · 对话考古 · WorkBuddy 1024 造物挑战参赛作品</span>
+  </footer>
+
+  <script src="src/js/parser.js"></script>
+  <script src="src/js/analyzer.js"></script>
+  <script src="src/js/reporter.js"></script>
+  <script src="src/js/app.js"></script>
+</body>
+</html>
